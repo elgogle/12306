@@ -255,14 +255,15 @@ class select:
         check_user = json.loads(myurllib2.Post(check_user_url, data), encoding='utf-8')
         check_user_flag = check_user['data']['flag']
         if check_user_flag is True:
-            print ('订票成功!')
-            print ('尝试提交订单...')
+            print ('用户有效')
             return True
         else:
             if check_user['messages']:
                 print ('用户检查失败：%s，可能未登录，可能session已经失效' % check_user['messages'][0])
             else:
                 print ('用户检查失败： %s，可能未登录，可能session已经失效' % check_user)
+            print ('开始尝试重新登录')
+            login.main()
 
     def submit_station(self, from_station_name, to_station_name):
         """
@@ -567,6 +568,7 @@ class select:
             try:
                 if num == 1:
                     self.wechat_log.warning("开始抢票")
+                    self.check_user()
 
                 for i in range(len(self.from_station)):
                     from_station, to_station = self.station_table(self.from_station[i], self.to_station[i])
