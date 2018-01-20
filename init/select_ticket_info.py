@@ -565,7 +565,9 @@ class select:
                 continue
 
             try:
-                self.wechat_log.warning("开始抢票")
+                if num == 1:
+                    self.wechat_log.warning("开始抢票")
+
                 for i in range(len(self.from_station)):
                     from_station, to_station = self.station_table(self.from_station[i], self.to_station[i])
                     for dt in self.station_date:
