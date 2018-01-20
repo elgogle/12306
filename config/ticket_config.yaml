@@ -22,38 +22,47 @@
 #damatu：打码兔账号，用于自动登录
 
 set:
-  station_date: "2018-02-06"
+  station_date:
+    - "2018-02-03"
+    - "2018-02-04"
+    - "2018-02-05"
+    - "2018-02-06"
+    - "2018-02-07"
+    - "2018-02-08"
+
   station_trains:
-    - "G1353"
-    - "G1329"
-    - "G1355"
-    - "G1303"
-    - "G1357"
-    - "G1305"
-    - "G1359"
-    - "G1361"
-    - "G1373"
-    - "G1363"
-  from_station: "上海"
-  to_station: "长沙"
+    - "K770"
+    - "G1006"
+    - "G1110"
+    - "G68"
+    - "G6016"
+    - "G840"
+    - "G1032"
+    - "G1124"
+
+  from_station:
+    - "广州"
+    - "东莞东"
+  to_station:
+    - "耒阳"
+    - "衡阳"
   set_type:
+    - "硬座"
     - "二等座"
-    - "一等座"
-#    - "一等座"
+
   is_more_ticket: Ture
-  select_refresh_interval: 1
-  expect_refresh_interval: 1
+  select_refresh_interval: 0.5
+  expect_refresh_interval: 0.5
   ticket_black_list_time: 3
 
 ticke_peoples:
-  - "文贤平"
-  - "梁敏"
+  - "廖书军"
 
 damatu:
-  uesr: ""
-  pwd: ""
+  uesr: "elgogle"
+  pwd: "car168shut187_"
 
 12306count:
-  uesr: "@qq.com"
-  pwd: "QWERTY"
+  uesr: "elgogle"
+  pwd: "car168shut187_"
 
