@@ -14,6 +14,8 @@ from myException.ticketConfigException import ticketConfigException
 from myException.ticketIsExitsException import ticketIsExitsException
 from myException.ticketNumOutException import ticketNumOutException
 from myUrllib import myurllib2
+from wxpy import *
+from wxpy import get_wechat_logger
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -30,6 +32,10 @@ class select:
         self.user_info = ""
         self.secretStr = ""
         self.ticket_black_list = dict()
+        self.bot = Bot()
+        friend = self.bot.friends().search(u'妈妈')[0]
+        self.wechat_log = get_wechat_logger(friend)
+        self.wechat_log.warning('订票开始')
 
     def get_ticket_info(self):
         """
@@ -37,9 +43,9 @@ class select:
         :return:
         """
         ticket_info_config = _get_yaml()
-        from_station = ticket_info_config["set"]["from_station"].encode("utf8")
-        to_station = ticket_info_config["set"]["to_station"].encode("utf8")
-        station_date = ticket_info_config["set"]["station_date"].encode("utf8")
+        from_station = ticket_info_config["set"]["from_station"]
+        to_station = ticket_info_config["set"]["to_station"]
+        station_date = ticket_info_config["set"]["station_date"]
         set_type = ticket_info_config["set"]["set_type"]
         is_more_ticket = ticket_info_config["set"]["is_more_ticket"].encode("utf8")
         ticke_peoples = ticket_info_config["ticke_peoples"]
@@ -49,17 +55,17 @@ class select:
         ticket_black_list_time = ticket_info_config["set"]["ticket_black_list_time"]
         print "*"*20
         print "当前配置：出发站：{0}\n到达站：{1}\n乘车日期：{2}\n坐席：{3}\n是否有票自动提交：{4}\n乘车人：{5}\n刷新间隔：{6}\n候选购买车次：{7}\n未开始刷票间隔时间：{8}\n僵尸票关小黑屋时长：{9}\n".format\
-                                                                                      (
-                                                                                      from_station,
-                                                                                      to_station,
-                                                                                      station_date,
-                                                                                      ",".join(set_type),
-                                                                                      is_more_ticket,
-                                                                                      ",".join(ticke_peoples),
-                                                                                      select_refresh_interval,
-                                                                                      ",".join(station_trains),
-                                                                                      expect_refresh_interval,
-                                                                                      ticket_black_list_time,
+              (
+                ",".join(from_station),
+                ",".join(to_station),
+                  ",".join(station_date),
+                  ",".join(set_type),
+                  is_more_ticket,
+                  ",".join(ticke_peoples),
+                  select_refresh_interval,
+                  ",".join(station_trains),
+                  expect_refresh_interval,
+                  ticket_black_list_time,
             )
         print "*"*20
         return from_station, to_station, station_date, set_type, is_more_ticket, ticke_peoples, select_refresh_interval, station_trains, expect_refresh_interval, ticket_black_list_time
@@ -145,6 +151,7 @@ class select:
         else:
             pass
 
+
     def getPassengerDTOs(self):
         """
         获取乘客信息
@@ -171,7 +178,7 @@ class select:
                 print("未查找到常用联系人")
                 raise PassengerUserException("未查找到常用联系人,请先添加联系人在试试")
 
-    def submitOrderRequest(self, from_station, to_station):
+    def submitOrderRequest(self, from_station, from_station_name, to_station, to_station_name, station_date):
         """
         提交车次信息
         车次对应字典
@@ -186,14 +193,17 @@ class select:
         } 参照station_seat()方法
         :return:
         """
-        select_url = 'https://kyfw.12306.cn/otn/leftTicket/queryZ?leftTicketDTO.train_date={0}&leftTicketDTO.from_station={1}&leftTicketDTO.to_station={2}&purpose_codes=ADULT'.format(self.station_date, from_station, to_station)
-        leftTicketLogUrl = 'https://kyfw.12306.cn/otn/leftTicket/log?leftTicketDTO.train_date={0}&leftTicketDTO.from_station={1}&leftTicketDTO.to_station={2}&purpose_codes=ADULT'.format(self.station_date, from_station, to_station)
+        print("正在查询 {0}, {1}到{2}".format(station_date, from_station_name, to_station_name))
+        # select_url = 'https://kyfw.12306.cn/otn/leftTicket/queryZ?leftTicketDTO.train_date={0}&leftTicketDTO.from_station={1}&leftTicketDTO.to_station={2}&purpose_codes=ADULT'.format(self.station_date, from_station, to_station)
+        # leftTicketLogUrl = 'https://kyfw.12306.cn/otn/leftTicket/log?leftTicketDTO.train_date={0}&leftTicketDTO.from_station={1}&leftTicketDTO.to_station={2}&purpose_codes=ADULT'.format(self.station_date, from_station, to_station)
+        select_url = 'https://kyfw.12306.cn/otn/leftTicket/queryZ?leftTicketDTO.train_date={0}&leftTicketDTO.from_station={1}&leftTicketDTO.to_station={2}&purpose_codes=ADULT'.format(station_date, from_station, to_station)
+        leftTicketLogUrl = 'https://kyfw.12306.cn/otn/leftTicket/log?leftTicketDTO.train_date={0}&leftTicketDTO.from_station={1}&leftTicketDTO.to_station={2}&purpose_codes=ADULT'.format(station_date, from_station, to_station)
         leftTicketLog = json.loads(myurllib2.get(leftTicketLogUrl), encoding='utf-8')
         if "status" in leftTicketLog and leftTicketLog["status"] is True:
             station_ticket = json.loads(myurllib2.get(select_url), encoding='utf-8')
             value = station_ticket['data']
             if not value:
-                print ('{0}-{1} 车次坐席查询为空...'.format(self.from_station, self.to_station))
+                print ('{0}-{1} 车次坐席查询为空...'.format(from_station_name, to_station_name))
             else:
                 if value['result']:
                     for i in value['result']:
@@ -206,14 +216,13 @@ class select:
                                     # tiket_values = [k for k in value['map'].values()]
                                     self.secretStr = ticket_info[0]
                                     train_no = ticket_info[3]
-                                    print ('车次: ' + train_no + ' 始发车站: ' + self.to_station + ' 终点站: ' +
-                                           self.to_station + ' ' + self._station_seat[j].encode("utf8") + ':' + ticket_info[self.station_seat(self._station_seat[j].encode("utf8"))])
+                                    print ('车次: {0}, 时间：{1}, 座席: {2} {3}'.format(train_no, station_date, self._station_seat[j].encode("utf8"), ticket_info[self.station_seat(self._station_seat[j].encode("utf8"))]))
                                     if self.ticket_black_list.has_key(train_no) and (self.ticket_black_list["train_no"] - datetime.datetime.now()).seconds/60 < self.ticket_black_list_time:
                                         print("该车次{} 正在被关小黑屋，跳过此车次".format(train_no))
                                     else:
                                         print ('正在尝试提交订票...')
                                         if self.check_user():
-                                            self.submit_station()
+                                            self.submit_station(from_station_name, to_station_name)
                                             self.getPassengerTicketStr(self._station_seat[j].encode("utf8"))
                                             self.getRepeatSubmitToken()
                                             self.user_info = self.getPassengerDTOs()
@@ -255,7 +264,7 @@ class select:
             else:
                 print ('用户检查失败： %s，可能未登录，可能session已经失效' % check_user)
 
-    def submit_station(self):
+    def submit_station(self, from_station_name, to_station_name):
         """
         提交车次
         预定的请求参数，注意参数顺序
@@ -272,8 +281,8 @@ class select:
                 ('back_train_date', self.time()),  # 返程时间
                 ('tour_flag', 'dc'),  # 旅途类型
                 ('purpose_codes', 'ADULT'),  # 成人票还是学生票
-                ('query_from_station_name', self.from_station),  # 起始车站
-                ('query_to_station_name', self.to_station),  # 终点车站
+                ('query_from_station_name', from_station_name),  # 起始车站
+                ('query_to_station_name', to_station_name),  # 终点车站
                 ]
         submitResult = json.loads(myurllib2.Post(submit_station_url, data), encoding='utf-8')
         if 'data' in submitResult and submitResult['data']:
@@ -284,6 +293,7 @@ class select:
         elif 'messages' in submitResult and submitResult['messages']:
             print(submitResult['messages'][0])
             raise ticketIsExitsException("检查到有未支付的订单，程序自动停止")
+
 
     def getPassengerTicketStr(self, set_type):
         """
@@ -399,7 +409,7 @@ class select:
             getQueueCountResult = json.loads(myurllib2.Post(getQueueCountUrl, data))
             if "status" in getQueueCountResult and getQueueCountResult["status"] is True:
                 if "countT" in getQueueCountResult["data"]:
-                    ticket = getQueueCountResult["data"]["ticket"]
+                    ticket = getQueueCountResult["data"]["ticket"].replace(",", "")
                     countT = getQueueCountResult["data"]["countT"]
                     if int(countT) is 0:
                         print("排队成功, 当前余票还剩余:" + ticket + "张")
@@ -448,6 +458,7 @@ class select:
             c_data = checkQueueOrderResult["data"] if "data" in checkQueueOrderResult else {}
             if 'submitStatus' in c_data and c_data['submitStatus']:
                 print("出票成功!")
+                self.wechat_log.warning("出票成功!")
                 if self.queryOrderWaitTime():
                     return True
             else:
@@ -484,7 +495,9 @@ class select:
                     self.initNoComplete()
                     orderId = self.queryMyOrderNoComplete()
                     if orderId:
-                        print ("恭喜您订票成功，订单号为：{0}, 请立即打开浏览器登录12306，访问‘未完成订单’，在30分钟内完成支付！".format(orderId))
+                        msg = "恭喜您订票成功，订单号为：{0}, 请立即打开浏览器登录12306，访问‘未完成订单’，在30分钟内完成支付！".format(orderId)
+                        self.wechat_log.warning(msg)
+                        print (msg)
                         return True
                     else:
                         print("等待出票中...")
@@ -542,18 +555,24 @@ class select:
     #         self.submitOrderRequest()
 
     def main(self):
-        from_station, to_station = self.station_table(self.from_station, self.to_station)
+
         num = 1
         while 1:
             try:
-                num += 1
-                time.sleep(self.select_refresh_interval)
-                if time.strftime('%H:%M:%S', time.localtime(time.time())) > "23:00:00":
-                    print "12306休息时间，本程序自动停止,明天早上七点运行"
-                    break
-                start_time = datetime.datetime.now()
-                self.submitOrderRequest(from_station, to_station)
-                print "正在第{0}次查询 乘车日期: {1}, 总耗时{2}ms".format(num, self.station_date, (datetime.datetime.now()-start_time).microseconds/1000)
+                for i in range(len(self.from_station)):
+                    from_station, to_station = self.station_table(self.from_station[i], self.to_station[i])
+                    for dt in self.station_date:
+                        num += 1
+                        time.sleep(self.select_refresh_interval)
+                        if time.strftime('%H:%M:%S', time.localtime(time.time())) > "23:00:00":
+                            print "12306休息时间，本程序自动停止,明天早上七点运行"
+                            break
+                        start_time = datetime.datetime.now()
+                        self.submitOrderRequest(from_station, self.from_station[i], to_station, self.to_station[i], dt)
+                        print "正在第{0}次查询 乘车日期: {1}, 总耗时{2}ms".format(num, dt, (datetime.datetime.now()-start_time).microseconds/1000)
+                        if num % 100 == 0:
+                            self.wechat_log.warning("已经查询超过{0}次".format(num))
+
             except PassengerUserException as e:
                 print e.message
                 break
