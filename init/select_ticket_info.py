@@ -558,15 +558,18 @@ class select:
 
         num = 1
         while 1:
+
+            if time.localtime(time.time()).tm_hour >= 23 or time.localtime(time.time()).tm_hour < 6:
+                print "12306休息时间，早上六点运行， 当前时间：{0}".format(time.strftime('%H:%M:%S', time.localtime(time.time())))
+                time.sleep(60)
+                continue
+
             try:
                 for i in range(len(self.from_station)):
                     from_station, to_station = self.station_table(self.from_station[i], self.to_station[i])
                     for dt in self.station_date:
                         num += 1
                         time.sleep(self.select_refresh_interval)
-                        if time.strftime('%H:%M:%S', time.localtime(time.time())) > "23:00:00":
-                            print "12306休息时间，本程序自动停止,明天早上七点运行"
-                            break
                         start_time = datetime.datetime.now()
                         self.submitOrderRequest(from_station, self.from_station[i], to_station, self.to_station[i], dt)
                         print "正在第{0}次查询 乘车日期: {1}, 总耗时{2}ms".format(num, dt, (datetime.datetime.now()-start_time).microseconds/1000)
