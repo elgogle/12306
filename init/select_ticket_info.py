@@ -41,6 +41,7 @@ class Select:
         self.sender = sender
         self.total_num = 0
 
+
     def get_ticket_info(self):
         """
         获取配置信息
@@ -585,9 +586,9 @@ class Select:
                         start_time = datetime.datetime.now()
                         self.submitOrderRequest(from_station, self.from_station[i], to_station, self.to_station[i], dt)
                         self.total_num += 1
-                        print "正在第{0}次查询 乘车日期: {1}, 总耗时{2}ms".format(self.self.total_num, dt, (datetime.datetime.now()-start_time).microseconds/1000)
+                        print "正在第{0}次查询 乘车日期: {1}, 总耗时{2}ms".format(self.total_num, dt, (datetime.datetime.now()-start_time).microseconds/1000)
                         if self.total_num % 100 == 0:
-                            self.log.send("已经查询超过{0}次".format(self.self.total_num))
+                            self.log.send("已经查询超过{0}次".format(self.total_num))
 
             except PassengerUserException as e:
                 print e.message
