@@ -575,7 +575,7 @@ class Select:
             try:
                 if num == 1:
                     self.log.send("开始抢票")
-                    # self.check_user()
+                    self.check_user()
 
                 for i in range(len(self.from_station)):
                     from_station, to_station = self.station_table(self.from_station[i], self.to_station[i])
@@ -607,6 +607,9 @@ class Select:
                     print(e.message)
             except Exception as e:
                 print e.message
+                self.log.send(e.message)
+                self.log.send("暂停3秒继续")
+                time.sleep(3)
 
 
 if __name__ == '__main__':
