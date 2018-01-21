@@ -39,6 +39,7 @@ class Select:
         self.stop = False
         self.log = log
         self.sender = sender
+        self.total_num = 0
 
     def get_ticket_info(self):
         """
@@ -560,10 +561,10 @@ class Select:
 
     def main(self):
 
-        num = 1
         while 1:
 
             if time.localtime(time.time()).tm_hour >= 23 or time.localtime(time.time()).tm_hour < 6:
+                self.total_num = 0
                 print "12306休息时间，早上六点运行， 当前时间：{0}".format(time.strftime('%H:%M:%S', time.localtime(time.time())))
                 time.sleep(60)
                 continue
@@ -573,20 +574,20 @@ class Select:
                 continue
 
             try:
-                if num == 1:
+                if self.total_num == 0:
                     self.log.send("开始抢票")
                     self.check_user()
 
                 for i in range(len(self.from_station)):
                     from_station, to_station = self.station_table(self.from_station[i], self.to_station[i])
                     for dt in self.station_date:
-                        num += 1
                         time.sleep(self.select_refresh_interval)
                         start_time = datetime.datetime.now()
                         self.submitOrderRequest(from_station, self.from_station[i], to_station, self.to_station[i], dt)
-                        print "正在第{0}次查询 乘车日期: {1}, 总耗时{2}ms".format(num, dt, (datetime.datetime.now()-start_time).microseconds/1000)
-                        if num % 100 == 0:
-                            self.log.send("已经查询超过{0}次".format(num))
+                        self.total_num += 1
+                        print "正在第{0}次查询 乘车日期: {1}, 总耗时{2}ms".format(self.self.total_num, dt, (datetime.datetime.now()-start_time).microseconds/1000)
+                        if self.total_num % 100 == 0:
+                            self.log.send("已经查询超过{0}次".format(self.self.total_num))
 
             except PassengerUserException as e:
                 print e.message
@@ -608,8 +609,7 @@ class Select:
             except Exception as e:
                 print e.message
                 self.log.send(e.message)
-                self.log.send("暂停3秒继续")
-                time.sleep(3)
+
 
 
 if __name__ == '__main__':

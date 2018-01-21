@@ -15,6 +15,7 @@ command = """command:
 9 显示所订站点
 10 显示所订日期
 11 显示所订车次
+12 显示已查询多少次
 """
 
 
@@ -25,6 +26,8 @@ def wechat_command(msg):
         select.stop = True
     elif msg.text == "2":
         select.stop = False
+    elif msg.text == "12":
+        friend.send("已经查询 {0} 次".format(select.total_num))
     elif msg.text == "9":
         friend.send("from: {0}, to: {1}".format(" ".join(select.from_station), " ".join(select.to_station)))
     elif msg.text == "10":
