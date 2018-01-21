@@ -584,29 +584,33 @@ class Select:
                     for dt in self.station_date:
                         time.sleep(self.select_refresh_interval)
                         start_time = datetime.datetime.now()
-                        self.submitOrderRequest(from_station, self.from_station[i], to_station, self.to_station[i], dt)
-                        self.total_num += 1
-                        print "正在第{0}次查询 乘车日期: {1}, 总耗时{2}ms".format(self.total_num, dt, (datetime.datetime.now()-start_time).microseconds/1000)
-                        if self.total_num % 100 == 0:
-                            self.log.send("已经查询超过{0}次".format(self.total_num))
+                        try:
+                            self.submitOrderRequest(from_station, self.from_station[i], to_station, self.to_station[i], dt)
+                            self.total_num += 1
+                            print "正在第{0}次查询 乘车日期: {1}, 总耗时{2}ms".format(self.total_num, dt, (datetime.datetime.now()-start_time).microseconds/1000)
+                            if self.total_num % 100 == 0:
+                                self.log.send("已经查询超过{0}次".format(self.total_num))
+                        except PassengerUserException as e:
+                            print e.message
+                            break
+                        except ticketConfigException as e:
+                            print e.message
+                            break
+                        except ticketIsExitsException as e:
+                            print e.message
+                            break
+                        except ticketNumOutException as e:
+                            print e.message
+                            break
+                        except ValueError as e:
+                            if e.message == "No JSON object could be decoded":
+                                print("12306接口无响应，正在重试")
+                            else:
+                                print(e.message)
+                        except Exception as e:
+                            print e.message
+                            self.log.send(e.message)
 
-            except PassengerUserException as e:
-                print e.message
-                break
-            except ticketConfigException as e:
-                print e.message
-                break
-            except ticketIsExitsException as e:
-                print e.message
-                break
-            except ticketNumOutException as e:
-                print e.message
-                break
-            except ValueError as e:
-                if e.message == "No JSON object could be decoded":
-                    print("12306接口无响应，正在重试")
-                else:
-                    print(e.message)
             except Exception as e:
                 print e.message
                 self.log.send(e.message)
