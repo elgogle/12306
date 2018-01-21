@@ -6,6 +6,7 @@ import re
 import urllib
 import sys
 import time
+import login
 from collections import OrderedDict
 
 from config.ticketConf import _get_yaml
@@ -15,14 +16,17 @@ from myException.ticketIsExitsException import ticketIsExitsException
 from myException.ticketNumOutException import ticketNumOutException
 from myUrllib import myurllib2
 from wxpy import *
-from wxpy import get_wechat_logger
+from wechat import bot
+
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
 
-class select:
-    def __init__(self):
+
+class Select:
+
+    def __init__(self, log, sender):
         self.from_station, self.to_station, self.station_date, self._station_seat, self.is_more_ticket, self.ticke_peoples, self.select_refresh_interval, self.station_trains, self.expect_refresh_interval, self.ticket_black_list_time = self.get_ticket_info()
         self.order_request_params = {}  # 订单提交时的参数
         self.ticketInfoForPassengerForm = {}  # 初始化当前页面参数
@@ -32,10 +36,9 @@ class select:
         self.user_info = ""
         self.secretStr = ""
         self.ticket_black_list = dict()
-        self.bot = Bot()
-        friend = self.bot.friends().search(u'妈妈')[0]
-        self.wechat_log = get_wechat_logger(friend)
-
+        self.stop = False
+        self.log = log
+        self.sender = sender
 
     def get_ticket_info(self):
         """
@@ -459,7 +462,7 @@ class select:
             c_data = checkQueueOrderResult["data"] if "data" in checkQueueOrderResult else {}
             if 'submitStatus' in c_data and c_data['submitStatus']:
                 print("出票成功!")
-                self.wechat_log.warning("出票成功!")
+                self.sender.send("出票成功!")
                 if self.queryOrderWaitTime():
                     return True
             else:
@@ -497,7 +500,7 @@ class select:
                     orderId = self.queryMyOrderNoComplete()
                     if orderId:
                         msg = "恭喜您订票成功，订单号为：{0}, 请立即打开浏览器登录12306，访问‘未完成订单’，在30分钟内完成支付！".format(orderId)
-                        self.wechat_log.warning(msg)
+                        self.sender.send(msg)
                         print (msg)
                         return True
                     else:
@@ -565,10 +568,14 @@ class select:
                 time.sleep(60)
                 continue
 
+            if self.stop:
+                time.sleep(30)
+                continue
+
             try:
                 if num == 1:
-                    self.wechat_log.warning("开始抢票")
-                    self.check_user()
+                    self.log.send("开始抢票")
+                    # self.check_user()
 
                 for i in range(len(self.from_station)):
                     from_station, to_station = self.station_table(self.from_station[i], self.to_station[i])
@@ -579,7 +586,7 @@ class select:
                         self.submitOrderRequest(from_station, self.from_station[i], to_station, self.to_station[i], dt)
                         print "正在第{0}次查询 乘车日期: {1}, 总耗时{2}ms".format(num, dt, (datetime.datetime.now()-start_time).microseconds/1000)
                         if num % 100 == 0:
-                            self.wechat_log.warning("已经查询超过{0}次".format(num))
+                            self.log.send("已经查询超过{0}次".format(num))
 
             except PassengerUserException as e:
                 print e.message
@@ -603,5 +610,5 @@ class select:
 
 
 if __name__ == '__main__':
-    a = select('上海', '北京')
+    a = Select('上海', '北京')
     a.main()
