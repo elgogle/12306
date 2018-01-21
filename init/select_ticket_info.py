@@ -615,7 +615,6 @@ class Select:
                 print e.message
 
 
-
 if __name__ == '__main__':
     a = Select('上海', '北京')
     a.main()
