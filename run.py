@@ -69,6 +69,7 @@ def wechat_command(msg):
     else:
         friend.send(command)
 
+
 def run():
 
     login.main()
