@@ -613,7 +613,6 @@ class Select:
 
             except Exception as e:
                 print e.message
-                self.log.send(e.message)
 
 
 
